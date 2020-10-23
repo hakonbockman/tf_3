@@ -93,3 +93,47 @@ model.trainable = False # Freeze the outer model
 assert inner_model.trainable == False   # All layers in the model are now frozen
 assert inner_model.layers[0].trainable == False # trainable is propagated recursively
 
+
+'''
+**************************************************************************************************
+
+        A TYPICAL TRANSFER-LEARNING WORKFLOW
+'''
+
+base_model = keras.applications.Xception(
+    weights='imagenet', # load weights pretrained on imagenet
+    input_shape=(150, 150, 3),
+    include_top=False   # Do not include the imagenet Classifier at the top (the head of the model)
+)
+
+base_model.trainable = False # Freeze the base model
+
+# Create a new model to put ontop of the Xception we chose earlier
+inputs = keras.Input(shape=(150, 150, 3))
+
+# We make sure that the base_model is running in inference mode here,
+# by passing `training=False`. This is important for fine-tuning, as you will
+# learn in a few paragraphs.
+x = base_model(inputs, training = False) # We want to freeze the inputs so they are not doing any
+# weights adjustment. The input layer is basically a layer in itself. I.E we want the layer to just pass
+# the inferences from the Xception model and not adjust the values no matter what. 
+
+# Convert features of shape 'base_model.output_shape[1:] to vectors
+x = keras.layers.GlobalAveragePooling2D()(x)
+# Maxpooling layer as always to minimize footprint of data but still keep the essence of the data
+
+# A Dense classifier with a single unit (binary classification)
+outputs = keras.layers.Dense(1)(x)
+# At last a plain dense NN layer 
+
+model = keras.Model(inputs, outputs)
+
+''' TRAIN THE MODEL ON NEW DATA '''
+
+model.compile(
+    optimizer = keras.optimizers.Adam(),
+    loss = keras.losses.BinaryCrossentropy(from_logits=True),
+    metrics = [ keras.metrics.BinaryAccuracy() ]
+)
+
+model.fit(n)
