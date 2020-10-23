@@ -66,3 +66,30 @@ np.testing.assert_allclose(
     initial_layer_weights_values[1], final_layer1_weights_values[1]
 )
 
+'''
+    RECUURSIVE SETTING OF TRAINABLE ATTRIBITE
+
+    if model is set to trainable = False or layer any sub model or layer (i.e all children) will be also non-trainable as well.
+'''
+
+inner_model = keras.Sequential(
+    [
+        keras.Input(shape=(3, )),
+        keras.layers.Dense(3, activation='relu'),
+        keras.layers.Dense(3, activation='relu'),
+    ]
+)
+
+model = keras.Sequential(
+    [
+        keras.Input(shape=(3, )),
+        inner_model,
+        keras.layers.Dense(3, activation='sigmoid'),
+    ]
+)
+
+model.trainable = False # Freeze the outer model
+
+assert inner_model.trainable == False   # All layers in the model are now frozen
+assert inner_model.layers[0].trainable == False # trainable is propagated recursively
+
