@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow as tf
+import pathlib
+
 from tensorflow import keras
 
 
@@ -100,16 +102,22 @@ assert inner_model.layers[0].trainable == False # trainable is propagated recurs
         A TYPICAL TRANSFER-LEARNING WORKFLOW
 '''
 
+image_widht = 150
+image_height = 150
+batch_size = 32
+
+
+
 base_model = keras.applications.Xception(
     weights='imagenet', # load weights pretrained on imagenet
-    input_shape=(150, 150, 3),
+    input_shape=(image_widht, image_height, 3),
     include_top=False   # Do not include the imagenet Classifier at the top (the head of the model)
 )
 
 base_model.trainable = False # Freeze the base model
 
 # Create a new model to put ontop of the Xception we chose earlier
-inputs = keras.Input(shape=(150, 150, 3))
+inputs = keras.Input(shape=(image_widht, image_height, 3))
 
 # We make sure that the base_model is running in inference mode here,
 # by passing `training=False`. This is important for fine-tuning, as you will
@@ -129,11 +137,41 @@ outputs = keras.layers.Dense(1)(x)
 model = keras.Model(inputs, outputs)
 
 ''' TRAIN THE MODEL ON NEW DATA '''
-
+# Compile model
 model.compile(
     optimizer = keras.optimizers.Adam(),
     loss = keras.losses.BinaryCrossentropy(from_logits=True),
     metrics = [ keras.metrics.BinaryAccuracy() ]
 )
 
-model.fit(n)
+''' FETCH NEW DATA '''
+
+data_dir = pathlib.Path('./Storlidalen 21-22 08 2019/')
+image_count = len(list(data_dir.glob('*/*.jpg')))
+print('image_count: ', image_count)
+
+train_ds = tf.keras.preprocessing.image_dataset_from_directory(
+    data_dir,
+    validation_split=0.2,
+    subset="training",
+    seed=123,
+    image_size=(image_widht, image_height),
+    batch_size=batch_size
+)
+
+val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+    data_dir,
+    validation_split=0.2,
+    subset="validation",
+    seed=123,
+    image_size=(image_widht, image_height),
+    batch_size=batch_size
+)
+
+
+
+
+
+# Train the model
+
+model.fit(train_ds, epochs=20, validation_data=val_ds )
