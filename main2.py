@@ -5,14 +5,15 @@ import PIL.Image
 import tensorflow as tf
 import pathlib
 import matplotlib.pyplot as plt
-import pandas as pd
+#import pandas as pd
 
 from tensorflow import keras
 
 ''' LOAD THE DATA AND SPLIT '''
-data_dir_IR = pathlib.Path('./Combined/IR/')
-data_dir_Visual = pathlib.Path('./Combined/Visual/')
+data_dir_IR = pathlib.Path('../Saue_Bilder/Combined/IR')
+data_dir_Visual = pathlib.Path('../Saue_Bilder/Combined/Visual')
 
+data_dir = data_dir_Visual
 
 batch_size = 32
 img_height = 300
@@ -20,7 +21,7 @@ img_width = 300
 
 ''' TRAINING DATA'''
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-  data_dir_IR,
+  data_dir,
   validation_split=0.2,
   subset="training",
   seed=123,
@@ -29,18 +30,34 @@ train_ds = tf.keras.preprocessing.image_dataset_from_directory(
 
 ''' VALIDATION DATA'''
 val_ds = tf.keras.preprocessing.image_dataset_from_directory(
-  data_dir_IR,
+  data_dir,
   validation_split=0.1,
   subset="validation",
   seed=123,
   image_size=(img_height, img_width),
   batch_size=batch_size)
 
-class_names = train_ds.class_names
+
+# Taking the first batches in validation dataset and making them into a test dataset
+val_batches = tf.data.experimental.cardinality(val_ds)
+test_dataset = val_ds.take(val_batches // 5)
+val_ds = val_ds.skip(val_batches // 5)
+
+
+
+
+
+#class_names = train_ds.class_names
+
+print("image size: ", train_ds.image_size)
 
 print('class_names: ', class_names)
 
-plt.figure(figsize=(15, 15))
+image_count = len(list(data_dir.glob('*/*.jpg')))
+
+print('image_count: ', image_count)
+
+plt.figure(figsize=(10, 10))
 for images, labels in train_ds.take(1):
   for i in range(9):
     ax = plt.subplot(3, 3, i + 1)
@@ -82,7 +99,7 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 train_ds = train_ds.cache().prefetch(buffer_size = AUTOTUNE)
 val_ds = val_ds.cache().prefetch(buffer_size = AUTOTUNE)
-
+test_dataset = test_dataset.cache().prefetch(buffer_size = AUTOTUNE)
 
 
 ''' Compile the model'''

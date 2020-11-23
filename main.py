@@ -146,7 +146,8 @@ model.compile(
 
 ''' FETCH NEW DATA '''
 
-data_dir = pathlib.Path('./Storlidalen 21-22 08 2019/')
+data_dir = pathlib.Path( '../Saue_Bilder/Combined/IR')
+
 image_count = len(list(data_dir.glob('*/*.jpg')))
 print('image_count: ', image_count)
 
